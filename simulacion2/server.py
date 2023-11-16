@@ -3,7 +3,17 @@ from mesa.visualization import ModularServer
 from mesa.visualization.modules import ChartModule
 from mesa.visualization import Slider
 from model import CleaningModel, RoombaAgent, ObstacleAgent, ChargingStationAgent, VisitedCellAgent, DirtyCellAgent
+from mesa.visualization import TextElement
 
+class TimeTextElement(TextElement):
+    def __init__(self):
+        pass
+
+    def render(self, model):
+        if model.tiempo_hasta_limpieza is not None:
+            return f"Tiempo hasta limpieza: {model.tiempo_hasta_limpieza:.2f} segundos"
+        else:
+            return "Simulación en curso..."
 
 def agent_portrayal(agent):
     if isinstance(agent, RoombaAgent):
@@ -69,13 +79,24 @@ model_params = {
     "obstacle_density": Slider("Obstacle Density", 0.15, 0.0, 0.99, 0.01),
     "dirty_cells_density": Slider("Dirty Cells Density", 0.3, 0.0, 0.99, 0.01),
     "width": 24,
-    "height": 24
+    "height": 24,
+    "max_steps": Slider("Max Steps", 100, 0, 1000, 1),
+    "max_time": Slider("Max Time", 100, 0, 1000, 1),
 }
 
+time_text = TimeTextElement()
+
+visitado_chart = ChartModule([{"Label": "Porcentaje Visitado", "Color": "Blue"}],
+                             data_collector_name='datacollector')
+
+sucio_chart = ChartModule([{"Label": "Celdas Sucias", "Color": "Brown"}],
+                          data_collector_name='datacollector')
+
 server = ModularServer(CleaningModel,
-                       [grid, battery_chart],
+                       [grid, battery_chart, visitado_chart, sucio_chart, time_text],
                        "Room Cleaning Simulation",
                        model_params)
+
 
 server.port = 8521
 server.launch()

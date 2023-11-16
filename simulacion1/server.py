@@ -3,7 +3,17 @@ from mesa.visualization import ModularServer
 from mesa.visualization.modules import ChartModule
 from mesa.visualization import Slider
 from model import CleaningModel, RoombaAgent, ObstacleAgent, ChargingStationAgent, VisitedCellAgent, DirtyCellAgent
+from mesa.visualization import TextElement
 
+class TimeTextElement(TextElement):
+    def __init__(self):
+        pass
+
+    def render(self, model):
+        if model.tiempo_hasta_limpieza is not None:
+            return f"Tiempo hasta limpieza: {model.tiempo_hasta_limpieza:.2f} segundos"
+        else:
+            return "Simulación en curso..."
 
 def agent_portrayal(agent):
     if isinstance(agent, RoombaAgent):
@@ -65,18 +75,28 @@ battery_chart = ChartModule([{"Label": "BatteryLevel",
 grid = CanvasGrid(agent_portrayal, 10, 10, 500, 500)
 
 model_params = {
-    #"n_agents": 1,
-    "n_agents": Slider("Number of Agents", 1, 1, 10, 1),
+    "n_agents": Slider("Number of Agents", 1, 1, 15, 1), # 5 parameters: name, default value, min value, max value, step 
     "obstacle_density": Slider("Obstacle Density", 0.1, 0.0, 0.99, 0.01),
-    "dirty_cells_density": Slider("Dirty Cells Density", 0.1, 0.0, 0.99, 0.01),
+    "dirty_cells_density": Slider("Dirty Cells Density", 0.15, 0.0, 0.99, 0.01),
     "width": 10,
-    "height": 10
+    "height": 10,
+    "max_steps": Slider("Max Steps", 1000, 0, 5000, 1),
+    "max_time": Slider("Max Time", 1000, 0, 5000, 1),
 }
 
+time_text = TimeTextElement()
+
+visitado_chart = ChartModule([{"Label": "Porcentaje Visitado", "Color": "Blue"}],
+                             data_collector_name='datacollector')
+
+sucio_chart = ChartModule([{"Label": "Celdas Sucias", "Color": "Brown"}],
+                          data_collector_name='datacollector')
+
 server = ModularServer(CleaningModel,
-                       [grid, battery_chart],
+                       [grid, battery_chart, visitado_chart, sucio_chart, time_text],
                        "Room Cleaning Simulation",
                        model_params)
+
 
 server.port = 8521
 server.launch()

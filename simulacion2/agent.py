@@ -100,7 +100,6 @@ class RoombaAgent(Agent):
             # agregar celdas no visitadas
             if not any(isinstance(obj, VisitedCellAgent) for obj in contenidos):
                 self.celdas_no_visitadas.add(vecino)
-                print(f"Roomba {self.unique_id} tiene {self.celdas_no_visitadas} como celdas no visitadas")
             # agregar vecinos disponibles
             if not any(isinstance(obj, ObstacleAgent) for obj in contenidos) and not any(isinstance(obj, RoombaAgent) for obj in contenidos):
                 vecinos_disponibles.append(vecino)
@@ -119,12 +118,12 @@ class RoombaAgent(Agent):
             if any(isinstance(obj, RoombaAgent) for obj in contenidos):
                 # vamos a obtener conocimiento de ella
                 roomba_vecina = [roomba for roomba in contenidos if isinstance(roomba, RoombaAgent)][0]
-                print(f"Soy la Roomba {self.unique_id} y vamos a compartir conocimiento con Roomba {roomba_vecina.unique_id}")
+                # print(f"Soy la Roomba {self.unique_id} y vamos a compartir conocimiento con Roomba {roomba_vecina.unique_id}")
                 visitadas_previas = self.celdas_visitadas.copy()
                 # imprimimos todo el conocimiento actual
-                print(f"Roomba {self.unique_id} tiene {self.celdas_visitadas} como celdas visitadas")
-                print(f"Roomba {roomba_vecina.unique_id} tiene {roomba_vecina.celdas_visitadas} como celdas visitadas")
-                print(f"Deberia aprender {roomba_vecina.celdas_visitadas.difference(self.celdas_visitadas)}")
+                # print(f"Roomba {self.unique_id} tiene {self.celdas_visitadas} como celdas visitadas")
+                # print(f"Roomba {roomba_vecina.unique_id} tiene {roomba_vecina.celdas_visitadas} como celdas visitadas")
+                # print(f"Deberia aprender {roomba_vecina.celdas_visitadas.difference(self.celdas_visitadas)}")
                 self.celdas_visitadas = self.celdas_visitadas.union(roomba_vecina.celdas_visitadas)
                 self.celdas_no_visitadas = self.celdas_no_visitadas.union(roomba_vecina.celdas_no_visitadas)
                 self.celdas_sucias = self.celdas_sucias.union(roomba_vecina.celdas_sucias)
@@ -134,9 +133,9 @@ class RoombaAgent(Agent):
                 # quitamos de sucios los que estan en visitados
                 self.celdas_sucias = self.celdas_sucias.difference(self.celdas_visitadas)
                 # imprimir el conocimiento actualizado
-                print(f"Roomba {self.unique_id} tiene {self.celdas_visitadas} como celdas visitadas")
+                # print(f"Roomba {self.unique_id} tiene {self.celdas_visitadas} como celdas visitadas")
                 # print lo que aprendi fue (la diferencia)
-                print(f"Roomba {self.unique_id} aprendio {self.celdas_visitadas.difference(visitadas_previas)}")
+                # print(f"Roomba {self.unique_id} aprendio {self.celdas_visitadas.difference(visitadas_previas)}")
                 # si la roomba termino o esta muerta la agregamos como obstaculo
                 if roomba_vecina.termine or roomba_vecina.me_mori:
                     self.obstaculos.add(roomba_vecina.pos)                
@@ -154,6 +153,8 @@ class RoombaAgent(Agent):
             # limpiamos la basura
             self.model.grid.remove_agent(self.model.grid.get_cell_list_contents(self.siguiente_celda)[0])
             self.celdas_sucias.remove(self.siguiente_celda)
+            # llamar a model reduce_number_of_dirty_cells
+            self.model.reduce_number_of_dirty_cells()
             self.bateria -= 1 # esto nos quita 1 de bateria
         # nos movemos
         self.model.grid.move_agent(self, self.siguiente_celda)
@@ -161,6 +162,8 @@ class RoombaAgent(Agent):
         self.bateria -= 1
         # agregamos uno a los pasos dados
         self.pasos_dados += 1
+        # llamara a la funcion mark_cell_visited de model
+        self.model.mark_cell_visited(self.pos)
         # place visited cell agent
         self.model.grid.place_agent(VisitedCellAgent(self.unique_id + 1000, self.model), self.pos)
     
@@ -171,7 +174,7 @@ class RoombaAgent(Agent):
         # si tenemos alguna celda que no tiene un obstaculo o una roomba
         self.obtener_celdas_vecinas()
         if self.bateria <= 0:
-            print(f"Roomba {self.unique_id} se murio")
+            # print(f"Roomba {self.unique_id} se murio")
             self.me_mori = True
             return
 
@@ -195,28 +198,28 @@ class RoombaAgent(Agent):
 
         # si tenemos lista de emergencia
         if self.queue_de_movimientos_urgentes:
-            print(f"Roomba {self.unique_id} tiene una lista de emergencia que es {self.queue_de_movimientos_urgentes}")
+            # print(f"Roomba {self.unique_id} tiene una lista de emergencia que es {self.queue_de_movimientos_urgentes}")
             # si alguno de los movimientos de la lista de emergencia es un vecino disponible
             if any(movimiento in self.vecinos_disponibles for movimiento in self.queue_de_movimientos_urgentes):
                 self.siguiente_celda = [movimiento for movimiento in self.queue_de_movimientos_urgentes if movimiento in self.vecinos_disponibles][0]
                 self.queue_de_movimientos_urgentes.remove([movimiento for movimiento in self.queue_de_movimientos_urgentes if movimiento in self.vecinos_disponibles][0])
                 self.movernos()
             else:
-                print(f"Soy Roomba {self.unique_id} y estoy en {self.pos} y no tengo vecinos disponibles en mi lista de emergencia")
+                # print(f"Soy Roomba {self.unique_id} y estoy en {self.pos} y no tengo vecinos disponibles en mi lista de emergencia")
                 # calculamos de nuevo la lista mas corta a la estacion de carga tomando como un nuevo obstaculo la celda a la queriamos movernos
                 roombas_vecinas = []
                 vecinos = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False, radius=1)
                 for vecino in vecinos:
                     contenidos = self.model.grid.get_cell_list_contents(vecino)
                     if any(isinstance(obj, RoombaAgent) for obj in contenidos):
-                        print(f"Roomba {self.unique_id} tiene una roomba vecina en {vecino}")
+                        # print(f"Roomba {self.unique_id} tiene una roomba vecina en {vecino}")
                         roombas_vecinas.append(vecino)
 
                 nueva_ruta = self.calculate_route_to_cell_using_dijkstra(self.posicion_de_estacion_de_carga, self.celdas_visitadas, self.obstaculos.union(roombas_vecinas), self.celdas_no_visitadas)
                                                                          #self.obstaculos.union(self.queue_de_movimientos_urgentes[0]), self.celdas_no_visitadas)
                 if len(nueva_ruta) > 1:
                     self.queue_de_movimientos_urgentes = nueva_ruta[1:]
-                    print(f"Roomba {self.unique_id} tiene una nueva lista de emergencia que es {self.queue_de_movimientos_urgentes}")
+                    # print(f"Roomba {self.unique_id} tiene una nueva lista de emergencia que es {self.queue_de_movimientos_urgentes}")
             return
         # elegir un vecino disponible al azar
         if self.vecinos_disponibles:
@@ -226,7 +229,7 @@ class RoombaAgent(Agent):
             # si no si hay alguna celda que no hemos visitado nos movemos ahí
             elif self.celdas_no_visitadas.intersection(self.vecinos_disponibles):
                 self.siguiente_celda = self.random.choice(list(self.celdas_no_visitadas.intersection(self.vecinos_disponibles)))
-                print(f"Roomba {self.unique_id} se ira a una celda no visitada que es {self.siguiente_celda}")
+                # print(f"Roomba {self.unique_id} se ira a una celda no visitada que es {self.siguiente_celda}")
                 
             # si no nos movemos a un vecino disponible al azar
             else:
@@ -234,7 +237,7 @@ class RoombaAgent(Agent):
                 if self.celdas_sucias:
                     ruta = self.calculate_route_to_cell_using_dijkstra(list(self.celdas_sucias)[0], self.celdas_visitadas, self.obstaculos, self.celdas_no_visitadas)
                     if len(ruta) > 1:
-                        print(f"Roomba {self.unique_id} se ira a una celda sucia que es {ruta[1]} con el objetivo de cumplir su ruta mas corta a una celda sucia que es {ruta}")
+                        # print(f"Roomba {self.unique_id} se ira a una celda sucia que es {ruta[1]} con el objetivo de cumplir su ruta mas corta a una celda sucia que es {ruta}")
                         if ruta[1] in self.vecinos_disponibles:
                             self.siguiente_celda = ruta[1]
                         else:
@@ -243,21 +246,21 @@ class RoombaAgent(Agent):
                             for vecino in vecinos:
                                 contenidos = self.model.grid.get_cell_list_contents(vecino)
                                 if any(isinstance(obj, RoombaAgent) for obj in contenidos):
-                                    print(f"Roomba {self.unique_id} tiene una roomba vecina en {vecino}")
+                                    # print(f"Roomba {self.unique_id} tiene una roomba vecina en {vecino}")
                                     roombas_vecinas.append(vecino)
                             # volvemos a calcular la ruta mas corta tomando como obstaculos las roombas vecinas
                             ruta = self.calculate_route_to_cell_using_dijkstra(list(self.celdas_sucias)[0], self.celdas_visitadas, self.obstaculos.union(roombas_vecinas), self.celdas_no_visitadas)
                             if len(ruta) > 1:
-                                print(f"Roomba {self.unique_id} se ira a una celda sucia que es {ruta[1]} con el objetivo de cumplir su ruta mas corta a una celda sucia que es {ruta}")
+                                # print(f"Roomba {self.unique_id} se ira a una celda sucia que es {ruta[1]} con el objetivo de cumplir su ruta mas corta a una celda sucia que es {ruta}")
                                 self.siguiente_celda = ruta[1]
                     else:
-                        print(f"2. Roomba {self.unique_id} se ira a un vecino disponible al azar que es {self.random.choice(self.vecinos_disponibles)}")
+                        # print(f"2. Roomba {self.unique_id} se ira a un vecino disponible al azar que es {self.random.choice(self.vecinos_disponibles)}")
                         self.siguiente_celda = self.random.choice(self.vecinos_disponibles)
                 elif self.celdas_no_visitadas:
                     ruta = self.calculate_route_to_cell_using_dijkstra(list(self.celdas_no_visitadas)[0], self.celdas_visitadas, self.obstaculos, self.celdas_no_visitadas)
-                    print(f"1. Roomba {self.unique_id} tiene el objetivo de cumplir su ruta mas corta a una celda no visitada que es {ruta} la celda a la que se quiere llegar es {list(self.celdas_no_visitadas)[0]}")
+                    # print(f"1. Roomba {self.unique_id} tiene el objetivo de cumplir su ruta mas corta a una celda no visitada que es {ruta} la celda a la que se quiere llegar es {list(self.celdas_no_visitadas)[0]}")
                     if len(ruta) > 1:
-                        print(f"2. Roomba {self.unique_id} se ira a una celda no visitada que es {ruta[1]} con el objetivo de cumplir su ruta mas corta a una celda no visitada que es {ruta}")
+                        # print(f"2. Roomba {self.unique_id} se ira a una celda no visitada que es {ruta[1]} con el objetivo de cumplir su ruta mas corta a una celda no visitada que es {ruta}")
                         if ruta[1] in self.vecinos_disponibles:
                             self.siguiente_celda = ruta[1]
                         else:
@@ -266,26 +269,26 @@ class RoombaAgent(Agent):
                             for vecino in vecinos:
                                 contenidos = self.model.grid.get_cell_list_contents(vecino)
                                 if any(isinstance(obj, RoombaAgent) for obj in contenidos):
-                                    print(f"Roomba {self.unique_id} tiene una roomba vecina en {vecino}")
+                                    # print(f"Roomba {self.unique_id} tiene una roomba vecina en {vecino}")
                                     roombas_vecinas.append(vecino)
                             # volvemos a calcular la ruta mas corta tomando como obstaculos las roombas vecinas
                             ruta = self.calculate_route_to_cell_using_dijkstra(list(self.celdas_no_visitadas)[0], self.celdas_visitadas, self.obstaculos.union(roombas_vecinas), self.celdas_no_visitadas)
                             if len(ruta) > 1:
-                                print(f"Roomba {self.unique_id} se ira a una celda sucia que es {ruta[1]} con el objetivo de cumplir su ruta mas corta a una celda sucia que es {ruta}")
+                                # print(f"Roomba {self.unique_id} se ira a una celda sucia que es {ruta[1]} con el objetivo de cumplir su ruta mas corta a una celda sucia que es {ruta}")
                                 self.siguiente_celda = ruta[1]
                     else:
-                        print(f"Roomba {self.unique_id} se ira a un vecino disponible al azar que es {self.random.choice(self.vecinos_disponibles)}")
+                        # print(f"Roomba {self.unique_id} se ira a un vecino disponible al azar que es {self.random.choice(self.vecinos_disponibles)}")
                         self.siguiente_celda = self.random.choice(self.vecinos_disponibles)
                 else:
-                    print(f"Roomba {self.unique_id} se ira a un vecino disponible al azar que es {self.random.choice(self.vecinos_disponibles)}")
+                    # print(f"Roomba {self.unique_id} se ira a un vecino disponible al azar que es {self.random.choice(self.vecinos_disponibles)}")
                     self.siguiente_celda = self.random.choice(self.vecinos_disponibles)
         else:
-            print (f"Roomba {self.unique_id} no tiene vecinos disponibles")
+            # print (f"Roomba {self.unique_id} no tiene vecinos disponibles")
             self.siguiente_celda = self.pos
 
         self.movernos()
 
-        print(f"Soy la Roomba {self.unique_id} y me movi a {self.pos} y me queda {self.bateria}% de bateria, y mi ruta mas corta a la estacion de carga es {self.calculate_route_to_cell_using_dijkstra(self.posicion_de_estacion_de_carga, self.celdas_visitadas, self.obstaculos, self.celdas_no_visitadas)}")
+        # print(f"Soy la Roomba {self.unique_id} y me movi a {self.pos} y me queda {self.bateria}% de bateria, y mi ruta mas corta a la estacion de carga es {self.calculate_route_to_cell_using_dijkstra(self.posicion_de_estacion_de_carga, self.celdas_visitadas, self.obstaculos, self.celdas_no_visitadas)}")
         return
 
 class ObstacleAgent(Agent):  # Un agente que representa un obstáculo
