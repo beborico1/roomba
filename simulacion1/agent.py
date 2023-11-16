@@ -151,11 +151,16 @@ class RoombaAgent(Agent):
         # si hay basura en la celda
         if self.siguiente_celda in self.celdas_sucias:
             # limpiamos la basura
+
+            # llamar a model reduce_number_of_dirty_cells
+            # si si hay basura en la celda
+            contenidos = self.model.grid.get_cell_list_contents(self.siguiente_celda)
+            if any(isinstance(obj, DirtyCellAgent) for obj in contenidos):
+                self.model.reduce_number_of_dirty_cells()
+                self.bateria -= 1 # esto nos quita 1 de bateria
             self.model.grid.remove_agent(self.model.grid.get_cell_list_contents(self.siguiente_celda)[0])
             self.celdas_sucias.remove(self.siguiente_celda)
-            # llamar a model reduce_number_of_dirty_cells
-            self.model.reduce_number_of_dirty_cells()
-            self.bateria -= 1 # esto nos quita 1 de bateria
+            
         # nos movemos
         self.model.grid.move_agent(self, self.siguiente_celda)
         # quitamos uno de bateria
